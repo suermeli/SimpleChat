@@ -1,0 +1,57 @@
+<html>
+
+<head>
+
+<script type="text/javascript" src="jquery-2.1.4.min.js"></script>
+
+</head>
+
+<body>
+
+<form action="javascript:sendRequest()" method="get">
+	<input type="text" name="msg" id="msg" value="Ping"><input type="submit">
+</form>
+
+<a href="javascript:sendRequest();">Go for it!</a>
+<div id="theAnswer"></div>
+
+<script type="text/javascript">
+function sendRequest() {
+    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>You: " + $( "#msg" ).val());
+$.ajax({
+  url: "http://localhost:2428/ask/",
+  data: {
+    msg: $( "#msg" ).val()
+  },
+  success: function ( data, textStatus, xhr) {
+	if (xhr.status == 200) {
+    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: "  + data);
+	} 
+	if (xhr.status == 201) {
+    address = data.split(" ")[0];
+	intro = data.substr(address.length);
+	$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: " + intro + "...");
+	pollServer(address);	
+	}
+  }
+});}
+
+function pollServer( address ) {
+$.ajax({
+  url: address,
+  success: function ( data, textStatus, xhr) {
+	if (xhr.status == 200) {
+		$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: "  + data);
+	} 
+	if (xhr.status == 202) {
+		$( "#theAnswer" ).html( $( "#theAnswer" ).html() + ".");
+		setTimeout(pollServer, 1000,address); 
+	}
+  }
+});
+
+}
+
+</script>
+
+</body>
