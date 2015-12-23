@@ -3,6 +3,7 @@ package org.suermeli.simplechat.server;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -69,9 +70,9 @@ public class SimpleChatServer {
 	
 	public static void send(HttpExchange exchange, int responseCode, String response) throws IOException {
 		exchange.getResponseHeaders().add("Access-Control-Allow-Origin","*");
-		exchange.sendResponseHeaders(responseCode, response.getBytes().length);
+		exchange.sendResponseHeaders(responseCode, response.getBytes("UTF-8").length);
 		OutputStream os = exchange.getResponseBody();
-		os.write(response.getBytes());
+		os.write(response.getBytes("UTF-8"));
 		os.close();
 	}
 
@@ -95,7 +96,8 @@ public class SimpleChatServer {
 		server = HttpServer.create(new InetSocketAddress(port),0);
 		server.setExecutor(null);
 		currentAnswer = 0;
-		address = "http://localhost:" + (new Integer(port)).toString();
+		address = "http://" + InetAddress.getLocalHost().getCanonicalHostName() + ":" + (new Integer(port)).toString();
+		System.out.println("Registered at: " + address);
 	}
 
 

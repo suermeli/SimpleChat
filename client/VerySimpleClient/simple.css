@@ -1,0 +1,86 @@
+body {
+	
+	font-family: sans-serif;
+	
+}
+
+.exchange {
+	text-align: left;
+	width: 100%;
+	margin-top: 5px;
+	padding: 10px 20px 10px 20px;
+	  word-wrap: break-word;
+
+}
+
+.timestamp {
+	display: block;
+	position: absolute;
+	right: 4px;
+	bottom: 4px;
+	font-size: small;
+	color: #333;
+}
+
+.question, .shortAnswer, .longAnswerIntro, .longAnswerFull {
+		position: relative;
+	
+}
+.question:before {
+	content: "Du: ";
+	font-weight: bold;
+	
+}
+
+.shortAnswer:before, .longAnswerFull:before {
+	content: "Server: ";
+	font-weight: bold;
+	
+}
+
+.longAnswerIntro:before {
+	
+	content: "Server:";
+	font-weight: bold;
+	
+}
+
+
+
+.question {
+	margin-left: 0px;
+	margin-right: 60px;
+	margin-bottom: 10px;
+	background: #CCC;
+	padding: 10px;
+
+	
+}
+
+
+
+.shortAnswer, .longAnswerIntro, .longAnswerFull {
+	
+	margin-left: 20px;
+	margin-right: 40px;
+
+	background: #AAA;	
+	padding: 10px 10px 10px 10px;
+}
+
+.longAnswerFull {
+	margin-top: 5px;
+	background: #AAA;	
+	padding: 10px 10px 10px 10px;
+}
+
+
+.processing:after {
+/*	background-image: url("http://www.schlagbohrmaschine-vergleich.de/wp-content/uploads/2015/09/Schlagbohrmaschine-Test-2015-Vergleich-Testbericht.png");*/
+/*	background-image: url("ajax-loader.gif");
+	background-repeat: no-repeat;
+	background-position: 462px 50%;*/
+	
+	content: url("ajax-loader.gif");
+}
+

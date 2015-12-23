@@ -1,50 +1,103 @@
+<!DOCTYPE HTML>
+
+
 <html>
 
 <head>
-
+   <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="jqueryui/jquery-ui.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="simple.css">
+
+
+
 
 </head>
 
-<body>
-
+<body bgcolor="#333">
+<div align="center" style="position: fixed; top: 10px; left: 0px;width: 100%; ">
+<div id="theAnswerW" width="100%" align="center" style="height: 400px; width: 600px; margin-top: 0px; overflow-y: scroll; overflow-x: hidden; background: white;"><div id="theAnswer" style="width: 100%;"></div></div>
+</div>
+<div id="theForm" align="center" style="position: fixed; top: 410px; left: 0px;width: 100%; padding: 0px;vertical-align: middle;" >
+<div style="background: #ccc; width: 580px; padding: 10px; margin: 0px; ">
 <form action="javascript:sendRequest()" method="get">
-	<input type="text" name="msg" id="msg" value="Ping"><input type="submit">
+	<input type="text" name="msg" id="msg" value="Ping" style="width: 320px;">
+	<input type="text" value="http://localhost:2428" id="server" style="width: 160px;">
+<input type="submit" id="button" style="width: 80px">
 </form>
 
-<a href="javascript:sendRequest();">Go for it!</a>
-<div id="theAnswer"></div>
+</div>
+</div>
 
 <script type="text/javascript">
+
+$("#msg").focus().select();
+
+function getTimeStamp() {
+return (new Date()).toLocaleString();
+}
+
 function sendRequest() {
-    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>You: " + $( "#msg" ).val());
+	busy = 	$("#button").prop('disabled');
+	if (busy) return;
+	var value = $( "#msg" ).val();
+	var timestamp = getTimeStamp();
+	$( "#msg" ).val("");
+	$("#button").prop('disabled', true);
+
+
 $.ajax({
-  url: "http://localhost:2428/ask/",
+  url: $("#server").val() + "/ask",
   data: {
-    msg: $( "#msg" ).val()
+    msg: value
   },
   success: function ( data, textStatus, xhr) {
-	if (xhr.status == 200) {
-    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: "  + data);
+	var timestamp2 = getTimeStamp();
+	
+  if (xhr.status == 200) {
+    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<div class=\"exchange\"><div class=\"question\" title=\"" + "Gesendet: " + timestamp + "\">" + value + "<span class=\"timestamp\">" + timestamp + "</span></div>" +"<div class=\"shortAnswer\" title=\"" + "Empfangen: " + timestamp2 + "\">"  + data + "<span class=\"timestamp\">" + timestamp2 + "</span></div></div>");
+	$("#button").prop('disabled', false);
 	} 
 	if (xhr.status == 201) {
     address = data.split(" ")[0];
 	intro = data.substr(address.length);
-	$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: " + intro + "...");
+	id = address.split("/")[address.split("/").length-1];
+	$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<div class=\"exchange\"><div class=\"question\" title=\"" + timestamp + "\">" + value + "<span class=\"timestamp\">" + timestamp + "</span></div>" + "<div class=\"longAnswer\"><div class=\"longAnswerIntro\" title=\"" + "Empfangen: " + timestamp2 + "\">" + intro + "<span class=\"timestamp\">" + timestamp2 + "</span></div><div class=\"longAnswerFull processing\" title=\"Warte auf Antwort vom Server...\" id=\"" + id + "\">&nbsp;</div>");
 	pollServer(address);	
 	}
+	$('#theAnswerW').animate({ 
+   scrollTop: $('#theAnswer').height()}, 
+   0, 
+   "easeOutQuint");
+
+
   }
-});}
+  
+});
+}
 
 function pollServer( address ) {
+	id = address.split("/")[address.split("/").length-1];
 $.ajax({
   url: address,
   success: function ( data, textStatus, xhr) {
+	currentdate2 = new Date();
+	var timestamp2 = getTimeStamp();
 	if (xhr.status == 200) {
-		$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<br>Server: "  + data);
+		$( "#" + id ).html( data + "<span class=\"timestamp\">" + timestamp2 + "</span>");
+		$( "#" + id ).removeClass("processing");
+		$( "#" + id ).prop("title","Empfangen: " + timestamp2);
+	$('#theAnswerW').animate({ 
+   scrollTop: $('#theAnswer').height()}, 
+   0, 
+   "easeOutQuint"
+);
+	$("#button").prop('disabled', false);
+
 	} 
 	if (xhr.status == 202) {
-		$( "#theAnswer" ).html( $( "#theAnswer" ).html() + ".");
 		setTimeout(pollServer, 1000,address); 
 	}
   }
@@ -55,3 +108,4 @@ $.ajax({
 </script>
 
 </body>
+</html>

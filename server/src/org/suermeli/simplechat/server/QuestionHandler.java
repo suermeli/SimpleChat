@@ -18,7 +18,9 @@ public abstract class QuestionHandler implements HttpHandler {
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
 
-		String query = exchange.getRequestURI().getQuery();
+		String query = java.net.URLDecoder.decode(exchange.getRequestURI().getQuery(), "UTF-8");
+		
+		System.out.println(query);
 		
 	    Map<String, String> result = new HashMap<String, String>();
 	    for (String param : query.split("&")) {
