@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 import org.suermeli.simplechat.server.LongAnswer;
 
@@ -35,23 +36,31 @@ public abstract class QuestionHandler implements HttpHandler {
 	            result.put(pair[0], "");
 	        }
 	    }
-		
-		String response = determineShortAnswer(result.get("msg"));
+		process(result.get("msg"));
+		String response = determineShortAnswer();
 		int responseCode = 200;
 		
-		if (response == null) {
-			LongAnswer longAnswer = determineLongAnswer(result.get("msg"));
-			responseCode = 201;
-			response = context.registerLongAnswer(longAnswer) + " " + longAnswer.getIntro();
+		
+		if (response != null) {
+			response = response.replace("\\","\\\\").replace("\"","\\\"");
+			response = "{\"answer\" : \"" + response + "\", \"details\" : [" + Detail.encodeDetails(determineDetails()) + "]}";
 		}
+		
+		if (response == null) {
+			LongAnswer longAnswer = determineLongAnswer();
+			responseCode = 201;
+			response = "{\"intro\" : \"" + longAnswer.getIntro().replace("\\","\\\\").replace("\"","\\\"") + "\", \"address\" : \"" + context.registerLongAnswer(longAnswer) + "\"}";
+		} 
 
 		SimpleChatServer.send(exchange,responseCode,response);
 		
 	}
+	
+	protected abstract void process(String msg);
+	protected abstract String determineShortAnswer();
+	protected abstract Vector<Detail> determineDetails();
+	protected abstract LongAnswer determineLongAnswer();
 
-	protected abstract LongAnswer determineLongAnswer(String msg);
-
-	protected abstract String determineShortAnswer(String msg);
 	
 	
 }

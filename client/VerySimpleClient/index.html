@@ -19,7 +19,9 @@
 
 <body bgcolor="#333">
 <div align="center" style="position: fixed; top: 10px; left: 0px;width: 100%; ">
-<div id="theAnswerW" width="100%" align="center" style="height: 400px; width: 600px; margin-top: 0px; overflow-y: scroll; overflow-x: hidden; background: white;"><div id="theAnswer" style="width: 100%;"></div></div>
+	<div id="theAnswerW" width="100%" align="center" style="height: 400px; width: 600px; margin-top: 0px; overflow-y: scroll; overflow-x: hidden; background: white;">
+			<div id="theAnswer" style="width: 100%;"></div>
+	</div>
 </div>
 <div id="theForm" align="center" style="position: fixed; top: 410px; left: 0px;width: 100%; padding: 0px;vertical-align: middle;" >
 <div style="background: #ccc; width: 580px; padding: 10px; margin: 0px; ">
@@ -30,11 +32,15 @@
 </form>
 
 </div>
+<div id="details" width="100%" align="center" style="height: 400px; width: 600px; margin-top: 20px; overflow-y: scroll; overflow-x: hidden; background: #444;"><div id="detailPlaceHolder" style="color: #333; height: 400px; display: flex; align-items: center;"><div style="text-align: center; width: 100%; ">Details</div></div>
+</div>
+
 </div>
 
 <script type="text/javascript">
 
 $("#msg").focus().select();
+
 
 var myhistory = [];
 
@@ -71,11 +77,47 @@ if (event.which == 40 && event.shiftKey) {
 }
 });
 
+var currentlyRevealedDetail;
+function reveal(id) {
+	hideDetails();
+	currentlyRevealedDetail = "#detail" + id;
+	$( currentlyRevealedDetail ).show();
+	$("#detailPlaceHolder").hide();
+}
+
+function hideDetails() {
+	$("#detailPlaceHolder").show();
+	if ( typeof currentlyRevealedDetail != "undefined") $( currentlyRevealedDetail ).hide();
+}
+
+var detailsthere = false;
+function addDetails(detailsArray) {
+		
+detailsArray.forEach(function(entry) {
+	$('#details').html($('#details').html() + "<div class=\"detail\" id=\"detail" + entry.id + "\">" + marked(entry.text, {renderer: renderer}) + "</div>");
+	$("#detail" + entry.id).hide();
+	detailsthere = true;
+});	
+
+//hideDetails();
+
+}
+
 var renderer = new marked.Renderer();
 
 renderer.paragraph = function (text) {
   return text;
 };
+
+renderer.link = function (href, title, text) {
+	targetText = "_blank";
+	hrefText = href;
+	if (href.charAt(0) == '#') {
+		targetText="";
+		hrefText="javascript:reveal(" + href.substr(1) + ")";
+	}
+	return "<a href=\"" + hrefText + "\" title=\"" + title + "\" target=\"" + targetText + "\">" + text + "</a>";
+}
 
 function htmlEncode(value){
   //create a in-memory div, set it's inner text(which jQuery automatically encodes)
@@ -90,6 +132,7 @@ function htmlDecode(value){
 function getTimeStamp() {
 	return (new Date()).toLocaleString();
 }
+
 
 
 function getDivString(divclass, titlePrefix, theActor, timestamp, text , linkit) {
@@ -115,6 +158,7 @@ function sendRequest() {
 	currentHistoryPointer = myhistory.length;
 
 	$("#theAnswer").html($("#theAnswer").html() + "<div class=\"exchange\">" + getDivString("question", "Gesendet", "Du", timestamp, htmlEncode(value), false) + "</div>");
+	$(".exchange").last().addClass("sending");
 
 	lastAddress = $("#server").val() + "/ask";
 	
@@ -127,14 +171,18 @@ function sendRequest() {
 		success : function (data, textStatus, xhr) {
 			var timestamp2 = getTimeStamp();
 			curex = $(".exchange").last();
+			dataJSON = JSON.parse(data);
+			$(".exchange").last().removeClass("sending");
 			if (xhr.status == 200) {
-
-				curex.html(curex.html() + getDivString("shortAnswer", "Empfangen", lastAddress, timestamp2, htmlEncode(data), true));
+				answer = dataJSON.answer;
+				details = dataJSON.details;
+				curex.html(curex.html() + getDivString("shortAnswer", "Empfangen", lastAddress, timestamp2, htmlEncode(answer), true));
 				$("#button").prop('disabled', false);
+				addDetails(details);
 			}
 			if (xhr.status == 201) {
-				address = data.split(" ")[0];
-				intro = data.substr(address.length);
+				intro = dataJSON.intro;
+				address = dataJSON.address;
 				id = address.split("/")[address.split("/").length - 1];
 				curex.html(curex.html() + "<div class=\"longAnswer\">" + getDivString("longAnswerIntro", "Empfangen", 
 				lastAddress, timestamp2, htmlDecode(intro), true) + "<div class=\"longAnswerFull processing\" title=\"Warte auf " + address +  "\" id=\"" + id + "\">&nbsp;<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">"+ address + "</a><br>... 	</span></div></div>");
@@ -159,9 +207,11 @@ function pollServer(address) {
 			currentdate2 = new Date();
 			var timestamp2 = getTimeStamp();
 			if (xhr.status == 200) {
-				$("#" + id).html(htmlEncode(data) + "<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">" + address + "</a><br>"+ timestamp2 + "</span>");
+			dataJSON = JSON.parse(data);
+				$("#" + id).html(marked(htmlEncode(dataJSON.answer), {renderer: renderer}) + "<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">" + address + "</a><br>"+ timestamp2 + "</span>");
 				$("#" + id).removeClass("processing");
 				$("#" + id).prop("title", "Empfangen: " + timestamp2 + " (" + address +  ")");
+				addDetails(dataJSON.details);
 				$('#theAnswerW').animate({
 					scrollTop : $('#theAnswer').height()
 				},

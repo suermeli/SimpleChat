@@ -1,7 +1,24 @@
 package org.suermeli.simplechat.server;
 
+import java.util.Vector;
+
 class LongAnswer {
 
+	private Vector<Detail> details;
+	
+	
+	public Vector<Detail> getDetails() {
+		return details;
+	}
+
+	public void setDetails(Vector<Detail> details) {
+		this.details = details;
+	}
+	
+	public void addDetail(Detail detail) {
+		details.addElement(detail);
+	}
+	
 	private String intro;
 	private boolean complete;
 	
@@ -16,7 +33,7 @@ class LongAnswer {
 	public LongAnswer(String intro) {
 		this.intro = intro;
 		this.complete = false;
-		
+		this.details = new Vector<Detail>();
 	}
 	
 	public String getAnswer() {

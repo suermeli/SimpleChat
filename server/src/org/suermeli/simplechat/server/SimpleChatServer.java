@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -48,7 +49,8 @@ public class SimpleChatServer {
 			String response = "Processing...";
 			if (longAnswer.isComplete()) {
 				responseCode = 200;
-				response = longAnswer.getAnswer();
+				response = longAnswer.getAnswer().replace("\\","\\\\").replace("\"","\\\"");
+				response = "{\"answer\" : \"" + response + "\", \"details\" : [" + Detail.encodeDetails(longAnswer.getDetails())+ "]}";
 			}
 	
 			SimpleChatServer.send(exchange,responseCode,response);
@@ -69,6 +71,7 @@ public class SimpleChatServer {
 	
 	
 	public static void send(HttpExchange exchange, int responseCode, String response) throws IOException {
+		//response = response.substring(0, response.length()-1) + ", \"query\" : \"" + exchange.getRequestURI().getRawQuery() + "\"}"; 
 		exchange.getResponseHeaders().add("Access-Control-Allow-Origin","*");
 		exchange.sendResponseHeaders(responseCode, response.getBytes("UTF-8").length);
 		OutputStream os = exchange.getResponseBody();
