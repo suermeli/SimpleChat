@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
 <script type="text/javascript" src="jqueryui/jquery-ui.min.js"></script>
+<script type="text/javascript" src="marked-master/marked.min.js"></script>
 
 <link rel="stylesheet" type="text/css" href="simple.css">
 
@@ -35,73 +36,145 @@
 
 $("#msg").focus().select();
 
-function getTimeStamp() {
-return (new Date()).toLocaleString();
-}
+var myhistory = [];
 
-function sendRequest() {
-	busy = 	$("#button").prop('disabled');
-	if (busy) return;
-	var value = $( "#msg" ).val();
-	var timestamp = getTimeStamp();
-	$( "#msg" ).val("");
-	$("#button").prop('disabled', true);
+var currentHistoryPointer = -1;
 
-
-$.ajax({
-  url: $("#server").val() + "/ask",
-  data: {
-    msg: value
-  },
-  success: function ( data, textStatus, xhr) {
-	var timestamp2 = getTimeStamp();
+function historyBack() {
 	
-  if (xhr.status == 200) {
-    $( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<div class=\"exchange\"><div class=\"question\" title=\"" + "Gesendet: " + timestamp + "\">" + value + "<span class=\"timestamp\">" + timestamp + "</span></div>" +"<div class=\"shortAnswer\" title=\"" + "Empfangen: " + timestamp2 + "\">"  + data + "<span class=\"timestamp\">" + timestamp2 + "</span></div></div>");
-	$("#button").prop('disabled', false);
-	} 
-	if (xhr.status == 201) {
-    address = data.split(" ")[0];
-	intro = data.substr(address.length);
-	id = address.split("/")[address.split("/").length-1];
-	$( "#theAnswer" ).html( $( "#theAnswer" ).html() + "<div class=\"exchange\"><div class=\"question\" title=\"" + timestamp + "\">" + value + "<span class=\"timestamp\">" + timestamp + "</span></div>" + "<div class=\"longAnswer\"><div class=\"longAnswerIntro\" title=\"" + "Empfangen: " + timestamp2 + "\">" + intro + "<span class=\"timestamp\">" + timestamp2 + "</span></div><div class=\"longAnswerFull processing\" title=\"Warte auf Antwort vom Server...\" id=\"" + id + "\">&nbsp;</div>");
-	pollServer(address);	
+	if (currentHistoryPointer > 0) {
+		currentHistoryPointer--;
+		$( "#msg" ).val(myhistory[currentHistoryPointer]);
 	}
-	$('#theAnswerW').animate({ 
-   scrollTop: $('#theAnswer').height()}, 
-   0, 
-   "easeOutQuint");
-
-
-  }
-  
-});
+	
 }
 
-function pollServer( address ) {
-	id = address.split("/")[address.split("/").length-1];
-$.ajax({
-  url: address,
-  success: function ( data, textStatus, xhr) {
-	currentdate2 = new Date();
-	var timestamp2 = getTimeStamp();
-	if (xhr.status == 200) {
-		$( "#" + id ).html( data + "<span class=\"timestamp\">" + timestamp2 + "</span>");
-		$( "#" + id ).removeClass("processing");
-		$( "#" + id ).prop("title","Empfangen: " + timestamp2);
-	$('#theAnswerW').animate({ 
-   scrollTop: $('#theAnswer').height()}, 
-   0, 
-   "easeOutQuint"
-);
-	$("#button").prop('disabled', false);
-
-	} 
-	if (xhr.status == 202) {
-		setTimeout(pollServer, 1000,address); 
+function historyForward() {
+	
+	if (currentHistoryPointer < myhistory.length - 1) {
+		currentHistoryPointer++;
+		$( "#msg" ).val(myhistory[currentHistoryPointer]);
 	}
-  }
+	
+}
+
+
+$( "#msg" ).keydown(function( event ) {
+
+if (event.which == 38 && event.shiftKey) {
+	historyBack();
+	event.preventDefault();
+}
+if (event.which == 40 && event.shiftKey) {
+	historyForward();
+	event.preventDefault();
+}
 });
+
+var renderer = new marked.Renderer();
+
+renderer.paragraph = function (text) {
+  return text;
+};
+
+function htmlEncode(value){
+  //create a in-memory div, set it's inner text(which jQuery automatically encodes)
+  //then grab the encoded contents back out.  The div never exists on the page.
+  return $('<div/>').text(value).html();
+}
+
+function htmlDecode(value){
+  return $('<div/>').html(value).text();
+}
+
+function getTimeStamp() {
+	return (new Date()).toLocaleString();
+}
+
+
+function getDivString(divclass, titlePrefix, theActor, timestamp, text , linkit) {
+	actorstring = theActor;
+	if (linkit) {
+		
+		actorstring = "<a href=\"" + theActor  + "\" target=\"_blank\">" + theActor + "</a>";
+		
+	}
+	return "<div class=\"" + divclass + "\" title=\"" + titlePrefix + ": " + timestamp + " (" + theActor + ")" + "\">" + marked(text, {renderer: renderer}) + "<span class=\"timestamp\">" + actorstring + "<br>" + timestamp + "</span></div>";
+}
+
+var lastAddress;
+function sendRequest() {
+	busy = $("#button").prop('disabled');
+	if (busy)
+		return;
+	var value = $("#msg").val();
+	var timestamp = getTimeStamp();
+	$("#msg").val("");
+	$("#button").prop('disabled', true);
+	myhistory.push(value);
+	currentHistoryPointer = myhistory.length;
+
+	$("#theAnswer").html($("#theAnswer").html() + "<div class=\"exchange\">" + getDivString("question", "Gesendet", "Du", timestamp, htmlEncode(value), false) + "</div>");
+
+	lastAddress = $("#server").val() + "/ask";
+	
+	$.ajax({
+		url : lastAddress ,
+		data : {
+			msg : value
+		},
+
+		success : function (data, textStatus, xhr) {
+			var timestamp2 = getTimeStamp();
+			curex = $(".exchange").last();
+			if (xhr.status == 200) {
+
+				curex.html(curex.html() + getDivString("shortAnswer", "Empfangen", lastAddress, timestamp2, htmlEncode(data), true));
+				$("#button").prop('disabled', false);
+			}
+			if (xhr.status == 201) {
+				address = data.split(" ")[0];
+				intro = data.substr(address.length);
+				id = address.split("/")[address.split("/").length - 1];
+				curex.html(curex.html() + "<div class=\"longAnswer\">" + getDivString("longAnswerIntro", "Empfangen", 
+				lastAddress, timestamp2, htmlDecode(intro), true) + "<div class=\"longAnswerFull processing\" title=\"Warte auf " + address +  "\" id=\"" + id + "\">&nbsp;<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">"+ address + "</a><br>... 	</span></div></div>");
+				pollServer(address);
+			}
+			$('#theAnswerW').animate({
+				scrollTop : $('#theAnswer').height()
+			},
+				0,
+				"easeOutQuint");
+
+		}
+
+	});
+}
+
+function pollServer(address) {
+	id = address.split("/")[address.split("/").length - 1];
+	$.ajax({
+		url : address,
+		success : function (data, textStatus, xhr) {
+			currentdate2 = new Date();
+			var timestamp2 = getTimeStamp();
+			if (xhr.status == 200) {
+				$("#" + id).html(htmlEncode(data) + "<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">" + address + "</a><br>"+ timestamp2 + "</span>");
+				$("#" + id).removeClass("processing");
+				$("#" + id).prop("title", "Empfangen: " + timestamp2 + " (" + address +  ")");
+				$('#theAnswerW').animate({
+					scrollTop : $('#theAnswer').height()
+				},
+					0,
+					"easeOutQuint");
+				$("#button").prop('disabled', false);
+
+			}
+			if (xhr.status == 202) {
+				setTimeout(pollServer, 1000, address);
+			}
+		}
+	});
 
 }
 

@@ -74,6 +74,8 @@ public class SimpleChatServer {
 		OutputStream os = exchange.getResponseBody();
 		os.write(response.getBytes("UTF-8"));
 		os.close();
+		System.out.println("Sending:" + response);
+		
 	}
 
 

@@ -1,6 +1,7 @@
 package org.suermeli.simplechat.server;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,9 +19,12 @@ public abstract class QuestionHandler implements HttpHandler {
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
 
-		String query = java.net.URLDecoder.decode(exchange.getRequestURI().getQuery(), "UTF-8");
-		
+		String query = URLDecoder.decode(exchange.getRequestURI().getRawQuery(),"UTF-8");
 		System.out.println(query);
+		//System.out.println(URLDecoder.decode(exchange.getRequestURI().getQuery(),"UTF-8"));
+		
+		//System.out.println(exchange.getRequestURI().getQuery());
+		//System.out.println(exchange.getRequestURI().getRawQuery());
 		
 	    Map<String, String> result = new HashMap<String, String>();
 	    for (String param : query.split("&")) {

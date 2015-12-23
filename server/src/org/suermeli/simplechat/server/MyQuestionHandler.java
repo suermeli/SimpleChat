@@ -18,7 +18,7 @@ class MyQuestionHandler extends QuestionHandler {
 				
 				longAnswer.setAnswer("Crazy shit!");
 				try {
-					this.sleep(30000);
+					this.sleep(10000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
