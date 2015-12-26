@@ -36,10 +36,19 @@
 </div>
 
 </div>
+<form method="get" action="" id="hiddenForm" target="_blank">
+<input type="hidden" id="hiddenInput" value="" name="msg">
+</form>
 
 <script type="text/javascript">
 
 $("#msg").focus().select();
+
+function submitHidden (address,text) {
+	$("#hiddenInput").val(text);
+	$("#hiddenForm").attr("action", address);
+	$("#hiddenForm").submit();
+}
 
 
 var myhistory = [];
@@ -135,17 +144,18 @@ function getTimeStamp() {
 
 
 
-function getDivString(divclass, titlePrefix, theActor, timestamp, text , linkit) {
+function getDivString(divclass, titlePrefix, theActor, timestamp, text , linktext, linkit) {
 	actorstring = theActor;
 	if (linkit) {
 		
-		actorstring = "<a href=\"" + theActor  + "\" target=\"_blank\">" + theActor + "</a>";
+		actorstring = "<a href=\"" + linktext  + "\" target=\"_blank\">" + theActor + "</a>";
 		
 	}
 	return "<div class=\"" + divclass + "\" title=\"" + titlePrefix + ": " + timestamp + " (" + theActor + ")" + "\">" + marked(text, {renderer: renderer}) + "<span class=\"timestamp\">" + actorstring + "<br>" + timestamp + "</span></div>";
 }
 
 var lastAddress;
+var lastMsg;
 function sendRequest() {
 	busy = $("#button").prop('disabled');
 	if (busy)
@@ -157,11 +167,11 @@ function sendRequest() {
 	myhistory.push(value);
 	currentHistoryPointer = myhistory.length;
 
-	$("#theAnswer").html($("#theAnswer").html() + "<div class=\"exchange\">" + getDivString("question", "Gesendet", "Du", timestamp, htmlEncode(value), false) + "</div>");
+	$("#theAnswer").html($("#theAnswer").html() + "<div class=\"exchange\">" + getDivString("question", "Gesendet", "Du", timestamp, htmlEncode(value), undefined, false) + "</div>");
 	$(".exchange").last().addClass("sending");
 
 	lastAddress = $("#server").val() + "/ask";
-	
+	lastMsg = value;
 	$.ajax({
 		url : lastAddress ,
 		data : {
@@ -176,7 +186,15 @@ function sendRequest() {
 			if (xhr.status == 200) {
 				answer = dataJSON.answer;
 				details = dataJSON.details;
-				curex.html(curex.html() + getDivString("shortAnswer", "Empfangen", lastAddress, timestamp2, htmlEncode(answer), true));
+				curex.html(curex.html() + 
+				getDivString(
+					"shortAnswer", 
+					"Empfangen", 
+					lastAddress ,  
+					timestamp2, 
+					htmlEncode(answer), 
+					"javascript:submitHidden(\'" + lastAddress + "\', \'" + lastMsg +  "\')", 
+					true));
 				$("#button").prop('disabled', false);
 				addDetails(details);
 			}
@@ -184,8 +202,16 @@ function sendRequest() {
 				intro = dataJSON.intro;
 				address = dataJSON.address;
 				id = address.split("/")[address.split("/").length - 1];
-				curex.html(curex.html() + "<div class=\"longAnswer\">" + getDivString("longAnswerIntro", "Empfangen", 
-				lastAddress, timestamp2, htmlDecode(intro), true) + "<div class=\"longAnswerFull processing\" title=\"Warte auf " + address +  "\" id=\"" + id + "\">&nbsp;<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">"+ address + "</a><br>... 	</span></div></div>");
+				curex.html(curex.html() + "<div class=\"longAnswer\">" + 
+				getDivString(
+				"longAnswerIntro", 
+				"Empfangen", 
+				lastAddress, 
+				timestamp2, 
+				htmlDecode(intro), 
+				"javascript:submitHidden(\'" + lastAddress + "\', \'" + lastMsg +  "\')", 
+				true) 
+				+ "<div class=\"longAnswerFull processing\" title=\"Warte auf " + address +  "\" id=\"" + id + "\">&nbsp;<span class=\"timestamp\"><a target=\"_blank\" href=\"" + address + "\">"+ address + "</a><br>... 	</span></div></div>");
 				pollServer(address);
 			}
 			$('#theAnswerW').animate({
